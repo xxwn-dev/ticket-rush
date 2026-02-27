@@ -1,0 +1,82 @@
+spring:
+  application:
+    name: TicketingApp
+
+  threads:
+    virtual:
+      enabled: true
+
+  server:
+    tomcat:
+      threads:
+        max: 2000
+      accept-count: 2000
+      max-connections: 10000
+      mbeanregistry:
+        enabled: true
+
+  datasource:
+    hikari:
+      maximum-pool-size: 30
+    url: jdbc:mysql://localhost:3306/ticket_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        highlight_sql: false
+        default_batch_fetch_size: 100
+
+  data:
+    redis:
+      # 기본값: 단일 Redis 직접 연결 (로컬 개발 / 테스트)
+      # Docker 배포 시 docker-compose.yaml 의 환경변수로 Sentinel 설정을 주입합니다:
+      #   SPRING_DATA_REDIS_SENTINEL_MASTER, SPRING_DATA_REDIS_SENTINEL_NODES
+      host: localhost
+      port: 6379
+      redisson:
+        config: classpath:redisson-local.yaml
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        concurrency: 10
+        max-concurrency: 20
+        prefetch: 1
+        retry:
+          enabled: true
+          initial-interval: 3s
+          max-attempts: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ["prometheus", "health", "metrics", "info"]
+    endpoints:
+      prometheus:
+        enabled: true
+      health:
+        show-details: always
+    metrics:
+      tags:
+        application: ${spring.application.name:ticketingApp}
+      distribution:
+        percentiles-histogram:
+          http:server.requests: true
+
+logging:
+  level:
+    root: warn
+    org.hibernate.SQL: warn
+    org.hibernate.orm.jdbc.bind: warn

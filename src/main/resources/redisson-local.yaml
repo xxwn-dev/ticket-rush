@@ -1,0 +1,8 @@
+# [local 프로파일] 단일 Redis 노드 — Mac 호스트 직접 실행용
+singleServerConfig:
+  address: redis://localhost:6379
+  database: 0
+  connectTimeout: 3000
+  timeout: 3000
+  threads: 16
+  nettyThreads: 32

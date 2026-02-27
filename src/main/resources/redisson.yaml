@@ -1,0 +1,16 @@
+# Redisson Sentinel 설정
+# redisson-spring-boot-starter 가 이 파일을 읽어 RedissonClient 를 생성합니다.
+# application.yaml 의 spring.data.redis.redisson.config: classpath:redisson.yaml 로 참조됩니다.
+sentinelServersConfig:
+  masterName: mymaster
+  sentinelAddresses:
+    - redis://localhost:26379
+    - redis://localhost:26380
+    - redis://localhost:26381
+  database: 0
+  # sentinel 또는 master 연결 타임아웃 (ms)
+  connectTimeout: 3000
+  timeout: 3000
+  # 분산 락(Redisson) 전용 스레드 — MQ 플랫폼 스레드 풀과 별개
+  threads: 16
+  nettyThreads: 32

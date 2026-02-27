@@ -1,0 +1,17 @@
+# ──────────────────────────────────────────────────────────────────────────
+# [test 프로파일] JUnit 통합 테스트용
+#
+# @SpringBootTest + @ActiveProfiles("test") 사용 시 자동 적용됩니다.
+# application.yaml 이 이미 localhost:6379 직접 연결을 기본으로 사용하므로
+# Sentinel 오버라이드 없이 동작합니다.
+#
+# 사전 조건: docker-compose up -d mysql redis-master rabbitmq
+# ──────────────────────────────────────────────────────────────────────────
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create
+
+logging:
+  level:
+    root: warn

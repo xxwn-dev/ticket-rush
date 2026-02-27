@@ -1,0 +1,152 @@
+services:
+  # ── MySQL ──────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: ticket-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ticket_db
+      MYSQL_ROOT_PASSWORD: root
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    networks:
+      - ticket-network
+
+  # ── Redis Sentinel 구성 ────────────────────────────────────────────────
+  #  Master 1대 + Replica 1대 + Sentinel 3대
+  #  Sentinel 최소 quorum = 2 (3대 중 2대 동의 시 failover)
+  #
+  #  ⚠ Mac Docker Desktop 주의:
+  #    Sentinel이 클라이언트에게 마스터 주소를 알려줄 때 Docker 내부 IP를 반환합니다.
+  #    Spring Boot를 호스트에서 직접 실행하면 해당 IP에 접근할 수 없습니다.
+  #    → Spring Boot도 Docker로 실행하거나, 로컬 개발 시에는 단일 Redis(6379)를 직접 연결하세요.
+  #    → Linux 환경에서는 컨테이너 IP가 호스트에서 라우팅되므로 Sentinel이 그대로 동작합니다.
+
+  redis-master:
+    image: redis:latest
+    container_name: ticket-redis-master
+    ports:
+      - "6379:6379"
+    command: redis-server --save "" --appendonly no --loglevel warning
+    networks:
+      - ticket-network
+
+  redis-replica:
+    image: redis:latest
+    container_name: ticket-redis-replica
+    ports:
+      - "6380:6379"
+    command: redis-server --replicaof redis-master 6379 --save "" --appendonly no --loglevel warning
+    depends_on:
+      - redis-master
+    networks:
+      - ticket-network
+
+  redis-sentinel-1:
+    image: redis:latest
+    container_name: ticket-redis-sentinel-1
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./redis/sentinel-1.conf:/etc/sentinel.conf
+    command: redis-sentinel /etc/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - ticket-network
+
+  redis-sentinel-2:
+    image: redis:latest
+    container_name: ticket-redis-sentinel-2
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./redis/sentinel-2.conf:/etc/sentinel.conf
+    command: redis-sentinel /etc/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - ticket-network
+
+  redis-sentinel-3:
+    image: redis:latest
+    container_name: ticket-redis-sentinel-3
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./redis/sentinel-3.conf:/etc/sentinel.conf
+    command: redis-sentinel /etc/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - ticket-network
+
+  # ── Spring Boot App (완전한 Sentinel 테스트용) ────────────────────────────
+  #  docker-compose --profile full up -d 로 실행
+  #  Mac에서 Sentinel 포함 전체 스택을 테스트할 때 사용합니다.
+  #  일반 로컬 개발 시에는 호스트에서 직접 실행하세요 (application-local.yaml).
+  app:
+    build: .
+    container_name: ticket-app
+    profiles: ["full"]          # docker-compose --profile full up 으로만 실행됨
+    ports:
+      - "8080:8080"
+    environment:
+      # Docker 내부에서는 Sentinel이 container DNS(redis-master)로 정상 동작
+      SPRING_DATA_REDIS_SENTINEL_MASTER: mymaster
+      SPRING_DATA_REDIS_SENTINEL_NODES: redis-sentinel-1:26379,redis-sentinel-2:26379,redis-sentinel-3:26379
+      SPRING_DATA_REDIS_REDISSON_CONFIG: classpath:redisson.yaml
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ticket_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul
+      SPRING_RABBITMQ_HOST: rabbitmq
+    depends_on:
+      - mysql
+      - redis-master
+      - redis-sentinel-1
+      - redis-sentinel-2
+      - redis-sentinel-3
+      - rabbitmq
+    networks:
+      - ticket-network
+
+  # ── RabbitMQ ───────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ticket-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - ticket-network
+
+  # ── Monitoring ─────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ticket-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ticket-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+networks:
+  ticket-network:
+    driver: bridge
