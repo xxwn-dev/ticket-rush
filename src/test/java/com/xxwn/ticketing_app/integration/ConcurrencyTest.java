@@ -67,13 +67,9 @@ class ConcurrencyTest {
     @AfterEach
     void cleanUp() {
         bookingRepository.deleteAll();
-        redisTemplate.delete(cacheKey);
-        // 좌석 상태를 AVAILABLE로 복구
-        seatRepository.findById(seatId).ifPresent(s -> {
-            s.cancel();
-            seatRepository.save(s);
-        });
+        seatRepository.deleteAll();
         concertRepository.deleteAll();
+        redisTemplate.delete(cacheKey);
     }
 
     @Test
