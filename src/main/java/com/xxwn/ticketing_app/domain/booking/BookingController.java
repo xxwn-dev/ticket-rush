@@ -27,7 +27,8 @@ public class BookingController {
     private static final String BOOKING_RESULT_TTL = "600";
 
     private static final String RESERVE_LUA =
-            "if redis.call('SREM', KEYS[1], ARGV[1]) == 1 then " +
+            "if redis.call('EXISTS', KEYS[2]) == 1 then return 0 end " +
+                    "if redis.call('SREM', KEYS[1], ARGV[1]) == 1 then " +
                     "    redis.call('SETEX', KEYS[2], ARGV[3], ARGV[2]) " +
                     "    return 1 " +
                     "else " +
@@ -101,6 +102,11 @@ public class BookingController {
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.BOOKING_EXCHANGE,
                     RabbitMQConfig.BOOKING_ROUTING_KEY_V2,
+                    message
+            );
+            rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.HOLD_EXCHANGE,
+                    RabbitMQConfig.HOLD_ROUTING_KEY,
                     message
             );
             log.info("[V2 Publish Success] User: {}, Seat: {}", userId, request.seatId());

@@ -43,6 +43,18 @@ public class BookingService {
     }
 
     @Transactional
+    public void releaseExpiredHold(Long userId, Long seatId, Long concertId) {
+        bookingRepository.findByUserIdAndSeatIdAndStatus(userId, seatId, BookingStatus.PAYMENT_PENDING)
+                .ifPresent(booking -> {
+                    booking.getSeat().cancel();
+                    seatRepository.save(booking.getSeat());
+                    bookingRepository.delete(booking);
+                    redisTemplate.opsForSet().add("concert:" + concertId + ":available", seatId.toString());
+                    log.info("[HoldExpiry] Released seat {} for userId {}", seatId, userId);
+                });
+    }
+
+    @Transactional
     public void processCancel(Long userId, Long seatId, Long concertId){
         Seat seat = seatRepository.findByIdAndConcertId(seatId, concertId).orElseThrow(() -> new EntityNotFoundException("좌석을 찾을 수 없습니다."));
         Long delCounts = bookingRepository.deleteByUserIdAndSeatId(userId,seatId);

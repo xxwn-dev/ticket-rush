@@ -11,4 +11,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countByConcertIdAndSeatId(@Param("concertId") Long concertId, @Param("seatId") Long seatId);
 
     Long deleteByUserIdAndSeatId(Long userId, Long seatId);
+
+    Optional<Booking> findByUserIdAndSeatIdAndStatus(Long userId, Long seatId, BookingStatus status);
 }

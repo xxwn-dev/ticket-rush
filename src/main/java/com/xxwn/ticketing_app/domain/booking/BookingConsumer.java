@@ -49,6 +49,17 @@ public class BookingConsumer {
         }
     }
 
+    @RabbitListener(queues = RabbitMQConfig.HOLD_EXPIRED_QUEUE)
+    public void receiveHoldExpiredMessage(BookingMessage message) {
+        log.info("[HoldExpiry Consumer] userId: {}, seatId: {}", message.userId(), message.seatId());
+        try {
+            bookingService.releaseExpiredHold(message.userId(), message.seatId(), message.concertId());
+        } catch (Exception e) {
+            log.error("[HoldExpiry] Failed to release seat {} for userId {}: {}",
+                    message.seatId(), message.userId(), e.getMessage());
+        }
+    }
+
     @RabbitListener(queues = RabbitMQConfig.BOOKING_CANCEL_QUEUE)
     public void receiveCancelMessage(BookingMessage message){
         log.info("[CANCEL consumer]: {}", message.seatId());

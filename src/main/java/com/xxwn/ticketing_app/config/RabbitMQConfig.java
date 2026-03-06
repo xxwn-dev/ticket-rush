@@ -4,6 +4,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -24,6 +25,14 @@ public class RabbitMQConfig {
     public static final String BOOKING_ROUTING_KEY_V2 = "booking.v2.routing.key";
     public static final String BOOKING_CANCEL_QUEUE = "booking.cancel.queue";
     public static final String BOOKING_CANCEL_ROUTING_KEY = "booking.cancel.routing.key";
+
+    // 좌석 선점 타임아웃 (TTL + DLX)
+    public static final String HOLD_EXCHANGE = "booking.hold.exchange";
+    public static final String HOLD_ROUTING_KEY = "booking.hold.routing.key";
+    public static final String HOLD_QUEUE = "booking.hold.queue";
+    public static final String HOLD_DLX = "booking.hold.dlx";
+    public static final String HOLD_EXPIRED_QUEUE = "booking.hold.expired.queue";
+    public static final String HOLD_EXPIRED_ROUTING_KEY = "booking.hold.expired.routing.key";
 
     @Bean
     public Queue v1Queue() {return new Queue(BOOKING_QUEUE_V1);}
@@ -59,6 +68,34 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(cancelQueue)
                 .to(cancelExchange)
                 .with(BOOKING_CANCEL_ROUTING_KEY);
+    }
+
+    @Bean
+    public DirectExchange holdExchange() { return new DirectExchange(HOLD_EXCHANGE); }
+
+    @Bean
+    public Queue holdQueue() {
+        return QueueBuilder.durable(HOLD_QUEUE)
+                .withArgument("x-message-ttl", 600_000)
+                .withArgument("x-dead-letter-exchange", HOLD_DLX)
+                .withArgument("x-dead-letter-routing-key", HOLD_EXPIRED_ROUTING_KEY)
+                .build();
+    }
+
+    @Bean
+    public Binding holdBinding(Queue holdQueue, DirectExchange holdExchange) {
+        return BindingBuilder.bind(holdQueue).to(holdExchange).with(HOLD_ROUTING_KEY);
+    }
+
+    @Bean
+    public DirectExchange holdDlx() { return new DirectExchange(HOLD_DLX); }
+
+    @Bean
+    public Queue holdExpiredQueue() { return new Queue(HOLD_EXPIRED_QUEUE, true); }
+
+    @Bean
+    public Binding holdExpiredBinding(Queue holdExpiredQueue, DirectExchange holdDlx) {
+        return BindingBuilder.bind(holdExpiredQueue).to(holdDlx).with(HOLD_EXPIRED_ROUTING_KEY);
     }
 
     @Bean
