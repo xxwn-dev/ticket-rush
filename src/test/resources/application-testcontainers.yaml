@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        hbm2ddl:
+          halt_on_error: false
+logging:
+  level:
+    root: warn
+    org.hibernate.tool.schema: error  # DDL 경고 억제
