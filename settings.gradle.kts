@@ -1,1 +1,1 @@
-rootProject.name = "ticketing-app"
+rootProject.name = "ticket-rush"

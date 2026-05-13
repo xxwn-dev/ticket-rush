@@ -75,6 +75,14 @@ management:
         percentiles-histogram:
           http:server.requests: true
 
+admin:
+  token: ticket-rush-admin-secret
+
+toss:
+  client-key: ${TOSS_CLIENT_KEY:test_ck_placeholder}
+  secret-key: ${TOSS_SECRET_KEY:test_sk_placeholder}
+  amount: 30000
+
 logging:
   level:
     root: warn
