@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  # 앱 메트릭 (JVM, HTTP 요청수 등) — Spring Boot Actuator → Prometheus
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  # k6 부하 테스트 결과 — k6 --out influxdb 로 수집
+  - name: InfluxDB-k6
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: k6
+    isDefault: false
