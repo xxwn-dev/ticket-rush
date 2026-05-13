@@ -39,3 +39,6 @@ out/
 frontend/.env.local
 .env.prod
 docs/
+
+frontend/node_modules/
+frontend/dist/
