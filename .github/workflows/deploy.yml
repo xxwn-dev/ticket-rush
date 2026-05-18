@@ -22,22 +22,30 @@ jobs:
       - name: Build jar
         run: ./gradlew bootJar -x test --no-daemon
 
-      - name: Upload jar and deploy to EC2
-        env:
-          EC2_KEY: ${{ secrets.EC2_KEY }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
+      - name: Prepare SSH key
         run: |
-          echo "$EC2_KEY" > /tmp/ec2_key.pem
+          echo "${{ secrets.EC2_KEY }}" | tr -d '\r' > /tmp/ec2_key.pem
           chmod 600 /tmp/ec2_key.pem
-          scp -i /tmp/ec2_key.pem -o StrictHostKeyChecking=no \
-            build/libs/*.jar \
-            $EC2_USER@$EC2_HOST:/home/ubuntu/ticket-rush/build/libs/
-          ssh -i /tmp/ec2_key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+
+      - name: Upload jar to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key_path: /tmp/ec2_key.pem
+          source: "build/libs/*.jar"
+          target: "/home/ubuntu/ticket-rush"
+          strip_components: 2
+
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key_path: /tmp/ec2_key.pem
+          script: |
             cd /home/ubuntu/ticket-rush
             git pull
             docker build -t ticket-rush:latest .
             docker-compose -f docker-compose.prod.yaml down
             docker-compose -f docker-compose.prod.yaml up -d
-          EOF
-          rm /tmp/ec2_key.pem
