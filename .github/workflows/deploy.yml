@@ -24,15 +24,15 @@ jobs:
 
       - name: Prepare SSH key
         run: |
-          echo "${{ secrets.EC2_KEY }}" | tr -d '\r' > /tmp/ec2_key.pem
-          chmod 600 /tmp/ec2_key.pem
+          echo "${{ secrets.EC2_KEY }}" | tr -d '\r' > $GITHUB_WORKSPACE/ec2_key.pem
+          chmod 600 $GITHUB_WORKSPACE/ec2_key.pem
 
       - name: Upload jar to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key_path: /tmp/ec2_key.pem
+          key_path: ${{ github.workspace }}/ec2_key.pem
           source: "build/libs/*.jar"
           target: "/home/ubuntu/ticket-rush"
           strip_components: 2
@@ -42,7 +42,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key_path: /tmp/ec2_key.pem
+          key_path: ${{ github.workspace }}/ec2_key.pem
           script: |
             cd /home/ubuntu/ticket-rush
             git pull
