@@ -24,11 +24,14 @@ services:
       - ticket-network
 
   app:
-    image: ticket-rush:latest
+    image: eclipse-temurin:21-jre
     container_name: ticket-app
     restart: on-failure
     ports:
       - "8080:8080"
+    volumes:
+      - ./build/libs/ticket-rush-0.0.1-SNAPSHOT.jar:/app/app.jar:ro
+    working_dir: /app
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379

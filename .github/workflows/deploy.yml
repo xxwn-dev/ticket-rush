@@ -38,7 +38,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu/ticket-rush
             git pull
-            docker build -t ticket-rush:latest .
             docker-compose -f docker-compose.prod.yaml down
             docker-compose -f docker-compose.prod.yaml up -d
           EOF
