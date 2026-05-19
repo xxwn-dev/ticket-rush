@@ -36,8 +36,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_RABBITMQ_HOST: rabbitmq
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
-    entrypoint: ["java", "-Xmx192m", "-XX:MaxMetaspaceSize=96m", "-XX:ReservedCodeCacheSize=48m", "-Xss256k", "-jar", "app.jar"]
-    mem_limit: 400m
+    entrypoint: ["java", "-Xmx192m", "-XX:MaxMetaspaceSize=128m", "-XX:ReservedCodeCacheSize=48m", "-Xss256k", "-jar", "app.jar"]
+    mem_limit: 450m
     depends_on:
       redis:
         condition: service_started
