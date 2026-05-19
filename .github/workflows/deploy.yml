@@ -22,22 +22,32 @@ jobs:
       - name: Build jar
         run: ./gradlew bootJar -x test --no-daemon
 
-      - name: Upload jar and deploy to EC2
+      - name: Diagnose key file (non-sensitive)
         env:
           EC2_KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          printf '%b' "$EC2_KEY" > /tmp/ec2_key.pem
+          echo "=== 파일 크기 (바이트) ==="
+          wc -c < /tmp/ec2_key.pem
+          echo "=== 줄 수 ==="
+          wc -l < /tmp/ec2_key.pem
+          echo "=== 첫 줄 (헤더만, 키 내용 아님) ==="
+          head -1 /tmp/ec2_key.pem
+          echo "=== 마지막 줄 (푸터만, 키 내용 아님) ==="
+          tail -1 /tmp/ec2_key.pem
+
+      - name: Upload jar and deploy to EC2
+        env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          printf '%b' "$EC2_KEY" > /tmp/ec2_key.pem
-          chmod 600 /tmp/ec2_key.pem
-          scp -i /tmp/ec2_key.pem -o StrictHostKeyChecking=no \
+          scp -o StrictHostKeyChecking=no \
             build/libs/*.jar \
             $EC2_USER@$EC2_HOST:/home/ubuntu/ticket-rush/build/libs/
-          ssh -i /tmp/ec2_key.pem -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
+          ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu/ticket-rush
             git pull
             docker build -t ticket-rush:latest .
             docker-compose -f docker-compose.prod.yaml down
             docker-compose -f docker-compose.prod.yaml up -d
           EOF
-          rm /tmp/ec2_key.pem
