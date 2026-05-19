@@ -22,19 +22,10 @@ jobs:
       - name: Build jar
         run: ./gradlew bootJar -x test --no-daemon
 
-      - name: Diagnose key file (non-sensitive)
-        env:
-          EC2_KEY: ${{ secrets.EC2_KEY }}
-        run: |
-          printf '%b' "$EC2_KEY" > /tmp/ec2_key.pem
-          echo "=== 파일 크기 (바이트) ==="
-          wc -c < /tmp/ec2_key.pem
-          echo "=== 줄 수 ==="
-          wc -l < /tmp/ec2_key.pem
-          echo "=== 첫 줄 (헤더만, 키 내용 아님) ==="
-          head -1 /tmp/ec2_key.pem
-          echo "=== 마지막 줄 (푸터만, 키 내용 아님) ==="
-          tail -1 /tmp/ec2_key.pem
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_KEY }}
 
       - name: Upload jar and deploy to EC2
         env:
