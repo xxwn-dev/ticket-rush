@@ -28,7 +28,7 @@ jobs:
           EC2_HOST: ${{ secrets.EC2_HOST }}
           EC2_USER: ${{ secrets.EC2_USER }}
         run: |
-          echo "$EC2_KEY" | tr -d '\r' > /tmp/ec2_key.pem
+          printf '%b' "$EC2_KEY" > /tmp/ec2_key.pem
           chmod 600 /tmp/ec2_key.pem
           scp -i /tmp/ec2_key.pem -o StrictHostKeyChecking=no \
             build/libs/*.jar \
