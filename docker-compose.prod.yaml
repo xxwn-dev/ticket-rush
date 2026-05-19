@@ -18,14 +18,15 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark 0.15"
-    mem_limit: 150m
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark.absolute 128MB"
+    mem_limit: 200m
     networks:
       - ticket-network
 
   app:
     image: ticket-rush:latest
     container_name: ticket-app
+    restart: on-failure
     ports:
       - "8080:8080"
     environment:
