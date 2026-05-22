@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk'
-import { joinQueue, createBooking, fetchBookingStatus } from '../api/events'
+import { joinQueue, createBooking, fetchBookingStatus, cancelBooking } from '../api/events'
 import { useSSE } from '../hooks/useSSE'
 
 type Step = 'queue' | 'booking' | 'result'
-type ResultType = 'success' | 'fail' | 'expired'
+type ResultType = 'success' | 'fail' | 'expired' | 'cancel'
 
 const BOOKING_TTL_SECONDS = 600
 
@@ -16,16 +16,21 @@ export default function EventDetailPage() {
 
   const [step, setStep] = useState<Step>('queue')
   const [rank, setRank] = useState<number | null>(null)
+  const [initialRank, setInitialRank] = useState<number | null>(null)
   const [resultType, setResultType] = useState<ResultType>('success')
   const [seatNumber, setSeatNumber] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(BOOKING_TTL_SECONDS)
   const [booking, setBooking] = useState(false)
+  const [reservedSeatId, setReservedSeatId] = useState<number | null>(null)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // 대기열 진입
   useEffect(() => {
     joinQueue(eventId).then(({ data }) => {
-      if (data) setRank(data.rank)
+      if (data) {
+        setRank(data.rank)
+        setInitialRank(data.rank)
+      }
     })
   }, [eventId])
 
@@ -57,11 +62,14 @@ export default function EventDetailPage() {
 
   const handleBook = async () => {
     setBooking(true)
+    let pickedSeatId: number | null = null
     try {
       const { status, data } = await createBooking(eventId)
       clearInterval(countdownRef.current!)
 
       if (status === 200 && data) {
+        pickedSeatId = data.seatId
+        setReservedSeatId(data.seatId)
         // 좌석 선점 성공 → Toss 결제 위젯 실행
         const tossPayments = await loadTossPayments(import.meta.env.VITE_TOSS_CLIENT_KEY)
         const payment = tossPayments.payment({ customerKey: ANONYMOUS })
@@ -73,18 +81,25 @@ export default function EventDetailPage() {
           successUrl: `${window.location.origin}/payment/success`,
           failUrl: `${window.location.origin}/payment/fail`,
         })
-        // requestPayment는 리다이렉트라 아래 코드는 실행되지 않음
       } else {
         setResultType('fail')
         setStep('result')
       }
     } catch {
-      setResultType('fail')
+      if (pickedSeatId !== null) {
+        await cancelBooking(eventId, pickedSeatId).catch(() => null)
+      }
+      setResultType('cancel')
       setStep('result')
     } finally {
       setBooking(false)
     }
   }
+
+  const calcProgress = (initial: number | null, current: number | null) =>
+    initial && current !== null
+      ? `${Math.min(100, ((initial - current) / initial) * 100)}%`
+      : '0%'
 
   const formatCountdown = (sec: number) => {
     const m = String(Math.floor(sec / 60)).padStart(2, '0')
@@ -118,7 +133,10 @@ export default function EventDetailPage() {
             </div>
             <p className="text-gray-500 text-sm mb-8">내 앞 대기 인원</p>
             <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
-              <div className="bg-blue-500 h-2 rounded-full animate-pulse w-1/3" />
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: calcProgress(initialRank, rank) }}
+              />
             </div>
             <p className="text-gray-400 text-sm">잠시만 기다려주세요...</p>
           </>
@@ -166,13 +184,15 @@ export default function EventDetailPage() {
               </>
             ) : (
               <>
-                <div className="text-5xl mb-4">❌</div>
+                <div className="text-5xl mb-4">{resultType === 'cancel' ? '🚫' : '❌'}</div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {resultType === 'expired' ? '시간이 초과되었습니다' : '예매에 실패했습니다'}
+                  {resultType === 'expired' ? '시간이 초과되었습니다'
+                    : resultType === 'cancel' ? '결제가 취소되었습니다'
+                    : '예매에 실패했습니다'}
                 </h2>
                 <p className="text-gray-500 mb-8">
-                  {resultType === 'expired'
-                    ? '예매 가능 시간이 지났습니다.'
+                  {resultType === 'expired' ? '예매 가능 시간이 지났습니다.'
+                    : resultType === 'cancel' ? '결제를 취소하셨습니다. 다시 시도하시려면 대기열에 재입장하세요.'
                     : '좌석이 모두 소진되었습니다.'}
                 </p>
                 <button
