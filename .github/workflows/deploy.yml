@@ -35,9 +35,11 @@ jobs:
           scp -o StrictHostKeyChecking=no \
             build/libs/*.jar \
             $EC2_USER@$EC2_HOST:/home/ubuntu/ticket-rush/build/libs/
+          scp -o StrictHostKeyChecking=no \
+            docker-compose.prod.yaml \
+            $EC2_USER@$EC2_HOST:/home/ubuntu/ticket-rush/docker-compose.prod.yaml
           ssh -o StrictHostKeyChecking=no $EC2_USER@$EC2_HOST << 'EOF'
             cd /home/ubuntu/ticket-rush
-            git pull
             docker-compose -f docker-compose.prod.yaml down
             docker-compose -f docker-compose.prod.yaml up -d
           EOF
