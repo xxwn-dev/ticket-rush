@@ -29,6 +29,9 @@ class EventRepositorySliceTest {
                 .title("Event A")
                 .startTime(LocalDateTime.of(2026, 6, 1, 18, 0))
                 .endTime(LocalDateTime.of(2026, 6, 1, 21, 0))
+                .ticketOpenTime(LocalDateTime.of(2026, 5, 25, 18, 0))
+                .homeTeam("LG 트윈스")
+                .awayTeam("KIA 타이거즈")
                 .build();
 
         Event saved = concertRepository.save(event);
@@ -44,6 +47,9 @@ class EventRepositorySliceTest {
                 .title("Event B")
                 .startTime(LocalDateTime.of(2026, 7, 1, 19, 0))
                 .endTime(LocalDateTime.of(2026, 7, 1, 22, 0))
+                .ticketOpenTime(LocalDateTime.of(2026, 6, 24, 19, 0))
+                .homeTeam("두산 베어스")
+                .awayTeam("롯데 자이언츠")
                 .build();
         concertRepository.save(event);
         em.flush();

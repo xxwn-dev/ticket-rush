@@ -46,6 +46,9 @@ class ConcurrencyTest extends AbstractIntegrationTest {
                 .title("Concurrency Test Event")
                 .startTime(LocalDateTime.now().plusDays(1))
                 .endTime(LocalDateTime.now().plusDays(1).plusHours(3))
+                .ticketOpenTime(LocalDateTime.now().minusDays(6))
+                .homeTeam("LG 트윈스")
+                .awayTeam("KIA 타이거즈")
                 .build());
         Seat seat = seatRepository.save(Seat.builder()
                 .seatNumber("C1")
