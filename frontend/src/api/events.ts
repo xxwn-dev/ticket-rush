@@ -1,4 +1,4 @@
-import { get, post } from './client'
+import { get, post, deleteReq } from './client'
 
 export interface Event {
   id: number
@@ -7,6 +7,10 @@ export interface Event {
   totalSeats: number
   availableSeats: number
   status: 'OPEN' | 'SOLD_OUT' | 'CLOSED'
+  ticketOpenAt: string
+  isTicketOpen: boolean
+  homeTeam: string
+  awayTeam: string
 }
 
 export interface AvailableSeats {
@@ -33,3 +37,6 @@ export const triggerBots = (eventId: number) =>
 
 export const confirmPayment = (paymentKey: string, orderId: string, amount: number) =>
   post<{ seatId: number; message: string }>('/api/payments/confirm', { paymentKey, orderId, amount })
+
+export const cancelBooking = (eventId: number, seatId: number) =>
+  deleteReq('/api/v2/bookings', { eventId, seatId })

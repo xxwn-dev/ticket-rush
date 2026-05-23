@@ -21,10 +21,16 @@ public class SseService {
         log.info("SSE 구독 시도 - userId: {}", userId);
 
         SseEmitter emitter = new SseEmitter(0L);
-        waitingEmitters.put(userId, emitter);
 
-        emitter.onCompletion(() -> waitingEmitters.remove(userId));
-        emitter.onTimeout(() -> waitingEmitters.remove(userId));
+        // 기존 emitter가 있으면 닫고 교체 — 안 닫으면 old.onCompletion이 나중에 new emitter를 지움
+        SseEmitter old = waitingEmitters.put(userId, emitter);
+        if (old != null) {
+            try { old.complete(); } catch (Exception ignored) {}
+        }
+
+        // remove(key, value): 자기 자신일 때만 삭제 — 재구독 시 새 emitter를 지우는 경쟁 조건 방지
+        emitter.onCompletion(() -> waitingEmitters.remove(userId, emitter));
+        emitter.onTimeout(() -> waitingEmitters.remove(userId, emitter));
 
         try {
             emitter.send(SseEmitter.event().name("connect").data("connected!"));
@@ -66,7 +72,7 @@ public class SseService {
             try {
                 emitter.send(SseEmitter.event().comment("ping"));
             } catch (IOException e) {
-                waitingEmitters.remove(userId);
+                waitingEmitters.remove(userId, emitter);
                 emitter.completeWithError(e);
             }
         });
@@ -78,7 +84,7 @@ public class SseService {
                 emitter.send(SseEmitter.event().name("queue").data(result));
             } catch (IOException e) {
                 log.warn("SSE 전송 실패로 제거: {}" , userId);
-                waitingEmitters.remove(userId);
+                waitingEmitters.remove(userId, emitter);
                 emitter.completeWithError(e);
             }
         }

@@ -56,6 +56,7 @@ public class BookingController {
                 "if userStatus == 'PAYMENT_PENDING' or not userStatus then " +
                     "redis.call('SADD', KEYS[1], ARGV[1]) " +
                     "redis.call('DEL', KEYS[2]) " +
+                    "redis.call('DEL', KEYS[3]) " +
                     "return 1 " +
                 "else " +
                     "return 0 " +
@@ -113,8 +114,9 @@ public class BookingController {
                 "PAYMENT_PENDING"
         );
 
-        // 2. 매진 판정
+        // 2. 매진 판정 — active_user 토큰도 정리해야 다음 이벤트에서 대기열을 건너뛰지 않음
         if (pickedSeatId == null) {
+            redisTemplate.delete("active_user:" + userId);
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "매진되었습니다."));
         }
 
@@ -179,11 +181,12 @@ public class BookingController {
     public ResponseEntity<Void> cancelBooking(@RequestHeader("X-USER-ID") String userId, @RequestBody BookingMessage request){
         String cacheKey = "event:" + request.eventId() + ":available";
         String resultKey = "booking:result:" + userId;
+        String activeUserKey = "active_user:" + userId;
 
         DefaultRedisScript<Long> script = new DefaultRedisScript<>(CANCEL_LUA, Long.class);
         Long result = redisTemplate.execute(
                 script,
-                Arrays.asList(cacheKey, resultKey),
+                Arrays.asList(cacheKey, resultKey, activeUserKey),
                 request.seatId().toString()
         );
         if(result != null && result > 0){
