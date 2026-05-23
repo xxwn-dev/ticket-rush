@@ -155,6 +155,9 @@ class BookingFlowTest extends AbstractIntegrationTest {
 
         // 좌석이 다시 가용 상태로 복구되어야 함
         assertThat(redisTemplate.opsForSet().isMember(cacheKey, seatId.toString())).isTrue();
+
+        // 취소 후 active_user 토큰이 제거되어 재진입 불가 상태여야 함
+        assertThat(redisTemplate.hasKey("active_user:1")).isFalse();
     }
 
     @Test
