@@ -19,9 +19,23 @@ export async function get<T>(path: string): Promise<T> {
   return res.json()
 }
 
-export async function post<T>(path: string, body?: unknown): Promise<{ status: number; data: T }> {
+export async function post<T>(path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<{ status: number; data: T }> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-USER-ID': userId,
+      ...extraHeaders,
+    },
+    body: body && Object.keys(body as object).length > 0 ? JSON.stringify(body) : undefined,
+  })
+  const data = res.status !== 204 ? await res.json().catch(() => null) : null
+  return { status: res.status, data }
+}
+
+export async function deleteReq<T>(path: string, body?: unknown): Promise<{ status: number; data: T }> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
       'X-USER-ID': userId,
