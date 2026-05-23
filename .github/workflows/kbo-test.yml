@@ -11,5 +11,7 @@ jobs:
         run: |
           curl -v -X POST "https://www.koreabaseball.com/ws/Schedule.asmx/GetMonthSchedule" \
             -H "Content-Type: application/x-www-form-urlencoded" \
+            -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" \
+            -H "Referer: https://www.koreabaseball.com/" \
             -d "leagueId=1&srIdList=0,9,6&seasonId=2026&gameMonth=05&teamId=" \
             --max-time 10
