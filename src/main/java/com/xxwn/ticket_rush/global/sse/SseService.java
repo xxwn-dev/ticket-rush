@@ -1,6 +1,9 @@
 package com.xxwn.ticket_rush.global.sse;
 
+import com.xxwn.ticket_rush.domain.queue.QueueResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -12,8 +15,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class SseService {
+
+    private final StringRedisTemplate redisTemplate;
 
     private static final Map<String, SseEmitter> waitingEmitters = new ConcurrentHashMap<>();
 
@@ -35,9 +41,14 @@ public class SseService {
         try {
             emitter.send(SseEmitter.event().name("connect").data("connected!"));
         } catch (Exception e){
-            //IOException?
             log.error("SSE connection error", e);
         }
+
+        // 이미 활성화된 유저(결제 단계 재진입)는 즉시 GO_BOOKING 전송
+        if ("true".equals(redisTemplate.opsForValue().get("active_user:" + userId))) {
+            sendMoveSignal(userId, new QueueResponse(0L, 0L, "GO_BOOKING"));
+        }
+
         return emitter;
     }
 
