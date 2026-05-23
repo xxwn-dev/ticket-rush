@@ -1,0 +1,15 @@
+name: KBO API Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test KBO API access
+        run: |
+          curl -v -X POST "https://www.koreabaseball.com/ws/Schedule.asmx/GetMonthSchedule" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "leagueId=1&srIdList=0,9,6&seasonId=2026&gameMonth=05&teamId=" \
+            --max-time 10
