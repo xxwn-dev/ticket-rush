@@ -24,6 +24,15 @@ public class Event {
     @Column(nullable = false)
     private LocalDateTime endTime;
 
+    @Column(nullable = false)
+    private LocalDateTime ticketOpenTime;
+
+    @Column(nullable = false)
+    private String homeTeam;
+
+    @Column(nullable = false)
+    private String awayTeam;
+
     public boolean isReservable(LocalDateTime now){
         return now.isBefore(startTime);
     }

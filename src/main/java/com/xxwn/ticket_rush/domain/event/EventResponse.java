@@ -8,10 +8,15 @@ public record EventResponse(
         LocalDateTime openAt,
         long totalSeats,
         long availableSeats,
-        String status
+        String status,
+        LocalDateTime ticketOpenAt,
+        boolean isTicketOpen,
+        String homeTeam,
+        String awayTeam
 ) {
     public static EventResponse of(Event event, long totalSeats, long availableSeats) {
-        String status = event.isReservable(LocalDateTime.now())
+        LocalDateTime now = LocalDateTime.now();
+        String status = event.isReservable(now)
                 ? (availableSeats > 0 ? "OPEN" : "SOLD_OUT")
                 : "CLOSED";
         return new EventResponse(
@@ -20,7 +25,11 @@ public record EventResponse(
                 event.getStartTime(),
                 totalSeats,
                 availableSeats,
-                status
+                status,
+                event.getTicketOpenTime(),
+                event.getTicketOpenTime().isBefore(now),
+                event.getHomeTeam(),
+                event.getAwayTeam()
         );
     }
 }

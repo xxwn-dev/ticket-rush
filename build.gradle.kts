@@ -26,6 +26,7 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-amqp")
+	implementation("org.jsoup:jsoup:1.17.2")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
 	implementation("org.springframework.boot:spring-boot-starter-validation")

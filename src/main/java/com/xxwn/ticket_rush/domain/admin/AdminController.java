@@ -1,15 +1,12 @@
 package com.xxwn.ticket_rush.domain.admin;
 
-import com.xxwn.ticket_rush.domain.admin.DataResetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,6 +15,7 @@ import java.util.Map;
 public class AdminController {
 
     private final DataResetService dataResetService;
+    private final AdminEventService adminEventService;
 
     @Value("${admin.token}")
     private String adminToken;
@@ -27,7 +25,19 @@ public class AdminController {
         if (!("Bearer " + adminToken).equals(auth)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
-        Long eventId = dataResetService.reset();
-        return ResponseEntity.ok(Map.of("reset", true, "eventId", eventId));
+        dataResetService.reset();
+        return ResponseEntity.ok(Map.of("reset", true));
+    }
+
+    @PostMapping("/events/kbo")
+    public ResponseEntity<Map<String, Object>> importKbo(
+            @RequestHeader("Authorization") String auth,
+            @RequestParam int year,
+            @RequestParam int month) {
+        if (!("Bearer " + adminToken).equals(auth)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+        List<Long> ids = adminEventService.importMonth(year, month);
+        return ResponseEntity.ok(Map.of("imported", ids.size(), "eventIds", ids));
     }
 }

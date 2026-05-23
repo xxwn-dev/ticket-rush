@@ -76,7 +76,7 @@ management:
           http:server.requests: true
 
 admin:
-  token: ticket-rush-admin-secret
+  token: ${ADMIN_TOKEN:ticket-rush-admin-secret}
 
 toss:
   client-key: ${TOSS_CLIENT_KEY:test_ck_placeholder}

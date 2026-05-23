@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +25,8 @@ public class EventController {
 
     @GetMapping
     public ResponseEntity<List<EventResponse>> list() {
-        List<EventResponse> events = eventRepository.findAll().stream()
+        List<EventResponse> events = eventRepository
+                .findAllByStartTimeAfter(LocalDateTime.now(ZoneId.of("Asia/Seoul"))).stream()
                 .map(event -> {
                     long total = seatRepository.countByEventId(event.getId());
                     long available = availableCount(event.getId());
